@@ -149,7 +149,12 @@ def main_genetic_algorithm(filename):
         graph = read_txt_file_to_graph(filename)
         odd_vertices = find_odd_degree_vertices(graph)
         eulerian_graph = add_edges_to_make_eulerian(graph, odd_vertices)
-        best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size=100, num_generations=1000, mutation_rate=0.05)
+        best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size=100, num_generations=900, mutation_rate=0.1)
+        # best_circuit = [(best_circuit[i], best_circuit[i + 1]) for i in range(len(best_circuit) - 1)]
+        best_circuit = [edge for edge_pair in best_circuit for edge in edge_pair]
+
+        best_circuit = list(dict.fromkeys(best_circuit))
+
         print(f"Best fitness: {best_fitness}")
         print(f"Best Eulerian circuit: {best_circuit}")
         return best_circuit, best_fitness
