@@ -18,31 +18,46 @@ def open_file():
 
 # Function to create and draw the graph
 def draw_graph():
-    # Create a graph from the adjacency matrix
+    global testdata
     G = nx.Graph()
     for i, row in enumerate(testdata):
         for j, weight in enumerate(row):
             if weight != 0:
                 G.add_edge(i, j, weight=weight)
-
-    # Compute and draw the Minimum Spanning Tree (MST) using Kruskal's algorithm
-    mst = nx.minimum_spanning_tree(G, algorithm='kruskal')
-    pos = nx.spring_layout(G)  # Node positions for all nodes
     
-    # Drawing code for nodes, edges, labels, and MST
+    # Find nodes with odd degrees
+    odd_nodes = [node for node in G.nodes() if G.degree(node) % 2 == 1]
+    
+    # Create a complete graph among odd-degree nodes and find the minimum-weight perfect matching
+    complete_graph = nx.complete_graph(odd_nodes)
+    min_weight_matching = nx.min_weight_matching(complete_graph, weight='weight')
+    
+    # Duplicate edges in the original graph to create an Eulerian graph
+    eulerian_graph = G.copy()
+    for u, v in min_weight_matching:
+        shortest_path = nx.shortest_path(G, source=u, target=v, weight='weight')
+        for i in range(len(shortest_path) - 1):
+            eulerian_graph.add_edge(shortest_path[i], shortest_path[i + 1], weight=G[shortest_path[i]][shortest_path[i + 1]]['weight'])
+    
+    # Find the Eulerian circuit in the augmented graph
+    eulerian_circuit = list(nx.eulerian_circuit(eulerian_graph))
+    
+    # Calculate the total distance of the circuit
+    total_distance = sum([eulerian_graph[u][v]['weight'] for u, v in eulerian_circuit])
+    
+    pos = nx.spring_layout(G)
     nx.draw_networkx_nodes(G, pos, node_size=700)
     nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=6)
-    nx.draw_networkx_edges(G, pos, edgelist=mst.edges(), width=6, edge_color="tab:red")
+    nx.draw_networkx_edges(G, pos, edgelist=eulerian_circuit, width=6, edge_color="tab:red")
     nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif")
     edge_labels = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
     
-    # Create a legend for the MST edges
-    legend_elements = [Line2D([0], [0], color='red', lw=4, label='MST Edges')]
+    legend_elements = [Line2D([0], [0], color='red', lw=4, label='Eulerian Circuit')]
     plt.legend(handles=legend_elements, loc='upper left')
     plt.axis('off')
     
-    # Save the graph as an image file and display it
+    plt.title(f"Total Distance: {total_distance}")
     plt.savefig('output.png')
     plt.show()
 
