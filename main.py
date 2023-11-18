@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog
-from solverccp import main_genetic_algorithm
-from visual import plot_data
+# from solverccp import main_genetic_algorithm
+from visual import plot_data, draw_it
+from test3 import main_genetic_algorithm
+from test2 import Graph
 
 def run_application():
     root = tk.Tk()
@@ -14,7 +16,8 @@ def run_application():
     
     if filename:
         best_circuit, best_fitness = main_genetic_algorithm(filename)
-        plot_data(best_circuit, best_fitness, frame)
+        #plot_data(best_circuit, best_fitness, frame)
+        draw_it(filename)
 
     root.mainloop()
 
