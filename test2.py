@@ -56,3 +56,4 @@ def calculate_fitness(circuit, graph_matrix):
     fitness = 1 / (total_cost + 1e-6)
     return fitness, total_cost
 
+
