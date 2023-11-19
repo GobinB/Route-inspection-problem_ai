@@ -7,6 +7,7 @@ import tkinter as tk
 from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import itertools
+import sys
 
 filename = None
 
@@ -243,7 +244,7 @@ def run_algo(filename, pop_size, num_generations, mutation_rate, visualization=T
     eulerian_graph = add_edges_to_make_eulerian(graph, odd_vertices)
 
     # Run the genetic algorithm to find the best Eulerian circuit
-    best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size=100, num_generations=1000, mutation_rate=0.05)
+    best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size, num_generations, mutation_rate)
 
     # Output the best solution details
     print(f"Best fitness: {best_fitness}")
@@ -254,6 +255,7 @@ def run_algo(filename, pop_size, num_generations, mutation_rate, visualization=T
         visualize_cpp_solution(best_circuit, eulerian_graph)
 
 def gui():
+    """GUI for selecting options"""
     global filename
     
     root = tk.Tk()
@@ -284,9 +286,22 @@ def gui():
     run_button.pack()
 
     root.mainloop()
-    root.destroy()
 
 def main():
+    """Read command line arguments, if unspecified, spawn a GUI"""
+    if len(sys.argv) == 2: # Command Line Args (just filename, use default pop_size, gen #, mutation r8)
+        filename = sys.argv[1]
+        run_algo(filename, 100, 1000, 0.05, False)
+        return
+    elif len(sys.argv) >= 5: # Command Line Args
+        filename = sys.argv[1]
+        pop_size = int(sys.argv[2])
+        num_generations = int(sys.argv[3])
+        mutation_rate = float(sys.argv[4])
+        run_algo(filename, pop_size, num_generations, mutation_rate, False)
+        return
+    
+    # Run the GUI
     gui()
 
 # Ensure the script can be run directly
