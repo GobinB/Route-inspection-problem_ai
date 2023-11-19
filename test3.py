@@ -4,7 +4,6 @@ from matplotlib.lines import Line2D
 import tkinter as tk
 from tkinter import filedialog
 import random
-# ... [Your existing code] ...
 # Define global variable to hold test data
 testdata = []
 
@@ -35,25 +34,9 @@ def min_key(key, mst_set):
     return min_index
 
 # Prim's algorithm for MST
-def prims_algorithm(graph):
-    num_vertices = len(graph)
-    selected = [False] * num_vertices
-    key = [float('inf')] * num_vertices
-    parent = [-1] * num_vertices
-    key[0] = 0
-    
-    for _ in range(num_vertices):
-        u = min_key(key, selected)
-        selected[u] = True
-        
-        for v in range(num_vertices):
-            if graph[u][v] > 0 and not selected[v] and key[v] > graph[u][v]:
-                key[v] = graph[u][v]
-                parent[v] = u
-    
-    return parent
+
 # Function to create and draw the graph based on a solution
-def draw_graph(graph, solution=None):
+def draw_graph(graph, solution=None, show=True):
     # Draw the graph using the solution if provided, else draw the original graph
     pos = nx.spring_layout(graph)
     nx.draw_networkx_nodes(graph, pos, node_size=700)
@@ -73,7 +56,9 @@ def draw_graph(graph, solution=None):
     plt.axis('off')
     plt.title(f"Total Distance: {calculate_fitness(graph, solution) if solution else 'N/A'}")
     plt.savefig('output.png')
-    plt.show()
+    
+    if show:
+        plt.show()
 
 # ... [Rest of your GA code] ...
 
@@ -145,7 +130,7 @@ def genetic_algorithm(graph, population_size, generations, mutation_rate):
         population = population[:population_size // 2] + new_population[:population_size // 2]
         
         # Draw the best solution so far
-        draw_graph(graph, population[0])
+        draw_graph(graph, population[0], show=True)
         
     return population[0]  # Return the best solution found
 # Function to run the genetic algorithm and draw the graph with the solution
@@ -158,14 +143,14 @@ def run_ga():
                 G.add_edge(i, j, weight=weight)
     
     # Run the genetic algorithm to find the best solution
-    best_solution = genetic_algorithm(G, population_size=50, generations=100, mutation_rate=0.02)
+    best_solution = genetic_algorithm(G, population_size=50, generations=100, mutation_rate=0.3)
     
-    # Draw the graph with the best solution found by the GA
-    draw_graph(G, best_solution)
+    # Draw the graph with the best solution found by the GA, only showing the final result
+    draw_graph(G, best_solution, show=True)
+
 
 # Modify the Tkinter setup to include a button to run the GA
 ga_button = tk.Button(root, text="Run Genetic Algorithm", command=run_ga)
 ga_button.pack()
 
-# ... [The rest of your Tkinter setup and main loop] ...
 root.mainloop()
