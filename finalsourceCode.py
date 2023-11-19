@@ -14,7 +14,7 @@ def open_file():
     if file_path:
         with open(file_path, "r") as file:
             testdata = [list(map(int, line.split())) for line in file.readlines()]
-            # draw_graph()  # Call the function to draw the graph once data is loaded
+           
 # Create a Tkinter window
 root = tk.Tk()
 root.title("Minimum Spanning Tree")
@@ -33,7 +33,6 @@ def min_key(key, mst_set):
             min_index = v
     return min_index
 
-# Prim's algorithm for MST
 
 # Function to create and draw the graph based on a solution
 def draw_graph(graph, solution=None, show=True):
@@ -60,7 +59,6 @@ def draw_graph(graph, solution=None, show=True):
     if show:
         plt.show()
 
-# ... [Rest of your GA code] ...
 
 def initialize_population(graph, population_size):
     population = []
