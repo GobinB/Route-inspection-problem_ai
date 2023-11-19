@@ -127,7 +127,6 @@ def genetic_algorithm(graph, population_size, generations, mutation_rate):
         # Replace the worst half with new solutions
         population = population[:population_size // 2] + new_population[:population_size // 2]
         
-        # The following line has been removed from here
         # draw_graph(graph, population[0], show=True)
         
     # Draw the best solution found after all generations
