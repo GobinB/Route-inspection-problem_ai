@@ -5,28 +5,22 @@ import tkinter as tk
 from tkinter import filedialog
 import random
 import time
+import sys
 
 # Define global variable to hold test data
 testdata = []
 
 # Function to open a file dialog and load test data
-def open_file():
+def open_file(file_path=None):
     global testdata
     try:
-        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        if not file_path:
+            file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
         if file_path:
             with open(file_path, "r") as file:
                 testdata = [list(map(int, line.split())) for line in file.readlines()]
     except Exception as e:
         print(f"Error reading file: {e}")
-           
-# Create a Tkinter window
-root = tk.Tk()
-root.title("Chinese Postman Problem")
-
-# Create a button to open the file dialog
-open_button = tk.Button(root, text="Open File", command=open_file)
-open_button.pack()
 
 # Function to find the vertex with the minimum key value
 def min_key(key, mst_set):
@@ -141,7 +135,7 @@ def aggregate_solutions(solutions):
     return aggregated_solution
 
 # Genetic Algorithm function adapted for CPP
-def genetic_algorithm(graph, population_size, generations, mutation_rate):
+def genetic_algorithm(graph, population_size, generations, mutation_rate, visualization):
     population = initialize_population(graph, population_size)
     performance_log = []
 
@@ -162,10 +156,11 @@ def genetic_algorithm(graph, population_size, generations, mutation_rate):
     best_solution = population[0]
     best_distance = calculate_fitness(graph, best_solution)
     print(f"Best Path: {best_solution}, Distance: {best_distance}")
-    draw_graph(graph, best_solution, show=True)
+    if visualization:
+        draw_graph(graph, best_solution, show=True)
     return best_solution, best_distance, performance_log
 
-def run_ga_woc():
+def run_ga_woc(population_size=50, generations=100, mutation_rate=0.3, visualization=True):
     global testdata
     G = nx.Graph()
     for i, row in enumerate(testdata):
@@ -175,40 +170,70 @@ def run_ga_woc():
     
     solutions = []
     for _ in range(5):  # Run 5 independent GAs
-        solution, distance, log = genetic_algorithm(G, population_size=50, generations=100, mutation_rate=0.3)
+        solution, distance, log = genetic_algorithm(G, population_size, generations, mutation_rate, visualization)
         solutions.append((solution, distance, log))
 
     # Aggregate solutions using WoC
     best_solution = aggregate_solutions(solutions)
     best_distance = calculate_fitness(G, best_solution)
     print(f"WoC Best Path: {best_solution}, Distance: {best_distance}")
-    draw_graph(G, best_solution, show=True)
+    if visualization:
+        draw_graph(G, best_solution, show=True)
 
 
-# Labels and entries for GA parameters
-label_population_size = tk.Label(root, text="Population Size:")
-label_population_size.pack()
+def gui():
+    """GUI for selecting options"""
+    # Create a Tkinter window
+    root = tk.Tk()
+    root.title("Chinese Postman Problem")
+    
+    # Create a button to open the file dialog
+    file_button = tk.Button(root, text="Select CPP", command=open_file)
+    file_button.pack()
 
-entry_population_size = tk.Entry(root)
-entry_population_size.pack()
-entry_population_size.insert(0, "50")  # Default value
+    # Entry boxes for population size, num of generations, mutation rate
+    label_population_size = tk.Label(root, text="Population Size:")
+    label_population_size.pack()
 
-label_generations = tk.Label(root, text="Generations:")
-label_generations.pack()
+    entry_population_size = tk.Entry(root)
+    entry_population_size.pack()
+    entry_population_size.insert(0, "50")  # Default value
 
-entry_generations = tk.Entry(root)
-entry_generations.pack()
-entry_generations.insert(0, "100")  # Default value
+    label_generations = tk.Label(root, text="Generations:")
+    label_generations.pack()
 
-label_mutation_rate = tk.Label(root, text="Mutation Rate:")
-label_mutation_rate.pack()
+    entry_generations = tk.Entry(root)
+    entry_generations.pack()
+    entry_generations.insert(0, "100")  # Default value
 
-entry_mutation_rate = tk.Entry(root)
-entry_mutation_rate.pack()
-entry_mutation_rate.insert(0, "0.3")  # Default value
+    label_mutation_rate = tk.Label(root, text="Mutation Rate:")
+    label_mutation_rate.pack()
 
-# Modify the Tkinter setup to include a button to run the GA
-woc_button = tk.Button(root, text="Run GA with WoC", command=run_ga_woc)
-woc_button.pack()
+    entry_mutation_rate = tk.Entry(root)
+    entry_mutation_rate.pack()
+    entry_mutation_rate.insert(0, "0.3")  # Default value
 
-root.mainloop()
+    run_button = tk.Button(root, text="Run GA with WoC", command=lambda: run_ga_woc(int(entry_population_size.get()), int(entry_generations.get()), float(entry_mutation_rate.get())))
+    run_button.pack()
+
+    root.mainloop()
+
+def main():
+    """Read command line arguments, if unspecified, spawn a GUI"""
+    if len(sys.argv) == 2: # Command Line Args (just filename, use default pop_size, gen #, mutation r8)
+        open_file(sys.argv[1])
+        run_ga_woc(visualization=False)
+        return
+    elif len(sys.argv) >= 5: # Command Line Args
+        open_file(sys.argv[1])
+        pop_size = int(sys.argv[2])
+        num_generations = int(sys.argv[3])
+        mutation_rate = float(sys.argv[4])
+        run_ga_woc(pop_size, num_generations, mutation_rate, False)
+        return
+
+    # Run the GUI
+    gui()
+
+if __name__ == "__main__":
+    main()
