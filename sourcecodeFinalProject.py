@@ -8,6 +8,8 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import itertools
 
+filename = None
+
 def read_txt_file_to_graph(filename):
     # Read the adjacency matrix from a .txt file into a graph
     with open(filename, 'r') as file:
@@ -15,8 +17,6 @@ def read_txt_file_to_graph(filename):
     matrix = [list(map(int, line.strip().split())) for line in lines]
     graph = nx.from_numpy_array(np.array(matrix))
     return graph
-
-
 
 def find_odd_degree_vertices(graph):
     # Find all vertices in the graph with odd degree
@@ -227,32 +227,67 @@ def visualize_cpp_solution(solution, graph):
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
     # Run the Tkinter loop
-    tk.mainloop()
+    root.mainloop()
 
-
-def main():
-    # File selection dialog
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
+def file_picker():
+    """Picks a txt file (because tkinter makes this hard)"""
+    global filename # Ugly
     filename = filedialog.askopenfilename(title="Select a .txt file for CPP", filetypes=[("Text files", "*.txt")])
-    root.destroy()
+    return
 
-    if filename:
-        graph = read_txt_file_to_graph(filename)
+def run_algo(filename, pop_size, num_generations, mutation_rate, visualization=True):
+    graph = read_txt_file_to_graph(filename)
 
-        # Process the graph to find odd degree vertices and make the graph Eulerian
-        odd_vertices = find_odd_degree_vertices(graph)
-        eulerian_graph = add_edges_to_make_eulerian(graph, odd_vertices)
+    # Process the graph to find odd degree vertices and make the graph Eulerian
+    odd_vertices = find_odd_degree_vertices(graph)
+    eulerian_graph = add_edges_to_make_eulerian(graph, odd_vertices)
 
-        # Run the genetic algorithm to find the best Eulerian circuit
-        best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size=100, num_generations=1000, mutation_rate=0.05)
+    # Run the genetic algorithm to find the best Eulerian circuit
+    best_circuit, best_fitness = genetic_algorithm(eulerian_graph, pop_size=100, num_generations=1000, mutation_rate=0.05)
 
-        # Visualize the best solution found
+    # Output the best solution details
+    print(f"Best fitness: {best_fitness}")
+    print(f"Best Eulerian circuit: {best_circuit}")
+
+    # Visualize the best solution found
+    if visualization:
         visualize_cpp_solution(best_circuit, eulerian_graph)
 
-        # Output the best solution details
-        print(f"Best fitness: {best_fitness}")
-        print(f"Best Eulerian circuit: {best_circuit}")
+def gui():
+    global filename
+    
+    root = tk.Tk()
+    root.title("Chinese Postman Problem")
+
+    # Select file
+    file_button = tk.Button(root, text="Select CPP", command=file_picker)
+    file_button.pack()
+
+    # Sliders for population size, num of generations, mutation rate
+    pop_size_label = tk.Label(root, text="Population Size:")
+    pop_size_label.pack()
+    pop_size = tk.Scale(root, from_=1, to=1000, orient='horizontal')
+    pop_size.pack()
+    pop_size.set(100) # Default value
+    num_generations_label = tk.Label(root, text="Number of Generations:")
+    num_generations_label.pack()
+    num_generations = tk.Scale(root, from_=1, to=10000, orient='horizontal')
+    num_generations.pack()
+    num_generations.set(1000)
+    mutation_rate_label = tk.Label(root, text="Mutation Rate %:")
+    mutation_rate_label.pack()
+    mutation_rate = tk.Scale(root, from_=1, to=100, orient='horizontal')
+    mutation_rate.pack()
+    mutation_rate.set(5)
+
+    run_button = tk.Button(root, text="Run", command=lambda: run_algo(filename, pop_size.get(), num_generations.get(), mutation_rate.get()/100))
+    run_button.pack()
+
+    root.mainloop()
+    root.destroy()
+
+def main():
+    gui()
 
 # Ensure the script can be run directly
 if __name__ == "__main__":
