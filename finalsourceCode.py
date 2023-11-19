@@ -125,10 +125,20 @@ def mutate(solution, mutation_rate):
 
 # Function to aggregate solutions (Wisdom of Crowds)
 def aggregate_solutions(solutions):
-    # Implement your aggregation logic here. This could be as simple as choosing the best solution,
-    # or more complex like combining different parts of each solution.
-    best_solution = min(solutions, key=lambda x: x[1])
-    return best_solution[0]
+    # Sort the solutions based on their fitness. Lower fitness is better.
+    sorted_solutions = sorted(solutions, key=lambda x: x[1])
+    
+    # Choosing the top N solutions for aggregation
+    top_n = 5
+    top_solutions = sorted_solutions[:top_n]
+
+    aggregated_solution = []
+    for i in range(len(top_solutions[0][0])):
+        edges = [solution[0][i] for solution in top_solutions]
+        most_common_edge = max(set(edges), key=edges.count)
+        aggregated_solution.append(most_common_edge)
+
+    return aggregated_solution
 
 # Genetic Algorithm function adapted for CPP
 def genetic_algorithm(graph, population_size, generations, mutation_rate):
