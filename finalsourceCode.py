@@ -127,11 +127,14 @@ def genetic_algorithm(graph, population_size, generations, mutation_rate):
         # Replace the worst half with new solutions
         population = population[:population_size // 2] + new_population[:population_size // 2]
         
-        # Draw the best solution so far
-        draw_graph(graph, population[0], show=True)
+        # The following line has been removed from here
+        # draw_graph(graph, population[0], show=True)
         
+    # Draw the best solution found after all generations
+    draw_graph(graph, population[0], show=True)
+    
     return population[0]  # Return the best solution found
-# Function to run the genetic algorithm and draw the graph with the solution
+
 def run_ga():
     global testdata
     G = nx.Graph()
