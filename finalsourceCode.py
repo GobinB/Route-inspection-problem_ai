@@ -10,6 +10,11 @@ import sys
 # Define global variable to hold test data
 testdata = []
 
+# Initialize global variables for GA parameters
+population_size = 50
+generations = 100
+mutation_rate = 0.3
+
 # Function to open a file dialog and load test data
 def open_file(file_path=None):
     global testdata
@@ -78,18 +83,19 @@ def initialize_population(graph, population_size):
 def calculate_fitness(graph, solution):
     weight_sum = 0
     for i in range(len(solution) - 1):
-        u, v = solution[i], solution[i+1]
+        u, v = solution[i], solution[i + 1]
         if graph.has_edge(u, v):
             weight_sum += graph[u][v]['weight']
         else:
-            weight_sum += 200 # Penalize the fitness for invalid edges
+            # Include zero-weight edges
+            weight_sum += 0
     # Include the edge from the last to the first node to complete the circuit
     if graph.has_edge(solution[-1], solution[0]):
         weight_sum += graph[solution[-1]][solution[0]]['weight']
     else:
-        weight_sum += 200
+        # Include zero-weight edges
+        weight_sum += 0
     return weight_sum
-
 
 
 def select_parents(population, graph):
@@ -160,20 +166,37 @@ def genetic_algorithm(graph, population_size, generations, mutation_rate, visual
         draw_graph(graph, best_solution, show=True)
     return best_solution, best_distance, performance_log
 
-def run_ga_woc(population_size=50, generations=100, mutation_rate=0.3, visualization=True):
-    global testdata
+def run_ga_woc(pop_size=None, num_generations=None, mut_rate=None, visualization=True):
+    global testdata, population_size, generations, mutation_rate
+
+    # Update global variables if new values are provided
+    if pop_size is not None:
+        population_size = pop_size
+    if num_generations is not None:
+        generations = num_generations
+    if mut_rate is not None:
+        mutation_rate = mut_rate
+
+    # Initialize the graph G from testdata
     G = nx.Graph()
     for i, row in enumerate(testdata):
         for j, weight in enumerate(row):
             if weight != 0:
                 G.add_edge(i, j, weight=weight)
     
+    # Add missing edges with zero weights
+    for i in range(len(testdata)):
+        for j in range(i + 1, len(testdata)):
+            if not G.has_edge(i, j):
+                G.add_edge(i, j, weight=0)
+    
+    # Run the Genetic Algorithm multiple times and collect solutions
     solutions = []
-    for _ in range(5):  # Run 5 independent GAs
+    for _ in range(5):  # Run 5 independent Genetic Algorithms
         solution, distance, log = genetic_algorithm(G, population_size, generations, mutation_rate, visualization)
         solutions.append((solution, distance, log))
 
-    # Aggregate solutions using WoC
+    # Aggregate solutions using Wisdom of Crowds (WoC) approach
     best_solution = aggregate_solutions(solutions)
     best_distance = calculate_fitness(G, best_solution)
     print(f"WoC Best Path: {best_solution}, Distance: {best_distance}")
@@ -197,43 +220,42 @@ def gui():
 
     entry_population_size = tk.Entry(root)
     entry_population_size.pack()
-    entry_population_size.insert(0, "50")  # Default value
+    entry_population_size.insert(0, str(population_size))  # Set the default value
 
     label_generations = tk.Label(root, text="Generations:")
     label_generations.pack()
 
     entry_generations = tk.Entry(root)
     entry_generations.pack()
-    entry_generations.insert(0, "100")  # Default value
+    entry_generations.insert(0, str(generations))  # Set the default value
 
     label_mutation_rate = tk.Label(root, text="Mutation Rate:")
     label_mutation_rate.pack()
 
     entry_mutation_rate = tk.Entry(root)
     entry_mutation_rate.pack()
-    entry_mutation_rate.insert(0, "0.3")  # Default value
+    entry_mutation_rate.insert(0, str(mutation_rate))  # Set the default value
 
-    run_button = tk.Button(root, text="Run GA with WoC", command=lambda: run_ga_woc(int(entry_population_size.get()), int(entry_generations.get()), float(entry_mutation_rate.get())))
+    run_button = tk.Button(root, text="Run GA with WoC", command=run_ga_woc)
     run_button.pack()
 
     root.mainloop()
+
 
 def main():
     """Read command line arguments, if unspecified, spawn a GUI"""
     if len(sys.argv) == 2: # Command Line Args (just filename, use default pop_size, gen #, mutation r8)
         open_file(sys.argv[1])
         run_ga_woc(visualization=False)
-        return
     elif len(sys.argv) >= 5: # Command Line Args
         open_file(sys.argv[1])
         pop_size = int(sys.argv[2])
         num_generations = int(sys.argv[3])
-        mutation_rate = float(sys.argv[4])
-        run_ga_woc(pop_size, num_generations, mutation_rate, False)
-        return
-
-    # Run the GUI
-    gui()
+        mut_rate = float(sys.argv[4])
+        run_ga_woc(pop_size, num_generations, mut_rate, False)
+    else:
+        # Run the GUI
+        gui()
 
 if __name__ == "__main__":
     main()
