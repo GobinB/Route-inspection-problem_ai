@@ -11,8 +11,8 @@ import sys
 testdata = []
 
 # Initialize global variables for GA parameters
-population_size = 900
-generations = 300
+population_size = 200
+generations = 200
 mutation_rate = 0.7
 
 # Function to open a file dialog and load test data
@@ -84,20 +84,31 @@ def initialize_population(graph, population_size):
 
 def calculate_fitness(graph, solution):
     weight_sum = 0
+    visited_edges = set()  # Keep track of visited edges
     for i in range(len(solution) - 1):
         u, v = solution[i], solution[i + 1]
         if graph.has_edge(u, v):
             weight_sum += graph[u][v]['weight']
+            visited_edges.add((u, v))
         else:
             # Include zero-weight edges
             weight_sum += 0
+
     # Include the edge from the last to the first node to complete the circuit
     if graph.has_edge(solution[-1], solution[0]):
         weight_sum += graph[solution[-1]][solution[0]]['weight']
+        visited_edges.add((solution[-1], solution[0]))
     else:
         # Include zero-weight edges
         weight_sum += 0
-    return weight_sum
+
+    # Penalty for unvisited edges
+    all_edges = set(graph.edges())
+    unvisited_edges = all_edges - visited_edges
+    penalty = sum(graph[u][v]['weight'] for u, v in unvisited_edges)
+
+    return weight_sum + penalty
+
 
 
 def select_parents(population, graph):
@@ -109,6 +120,7 @@ def select_parents(population, graph):
         tournament.sort(key=lambda x: calculate_fitness(graph, x))
         parents.append(tournament[0])
     return parents
+
 
 def crossover(parent1, parent2):
     # Single-point crossover
