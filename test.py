@@ -11,9 +11,9 @@ import sys
 testdata = []
 
 # Initialize global variables for GA parameters
-population_size = 200
-generations = 200
-mutation_rate = 0.7
+population_size = 50
+generations = 100
+mutation_rate = 0.3
 
 # Function to open a file dialog and load test data
 def open_file(file_path=None):
@@ -42,24 +42,22 @@ def min_key(key, mst_set):
 def draw_graph(graph, solution=None, show=True):
     pos = nx.spring_layout(graph)
     nx.draw_networkx_nodes(graph, pos, node_size=700)
-    nx.draw_networkx_labels(graph, pos, font_size=20, font_family="sans-serif")
-    edge_labels = nx.get_edge_attributes(graph, 'weight')
-
-    # Draw all the edges of the graph with default styling
-    #nx.draw_networkx_edges(graph, pos, edgelist=graph.edges(), width=2)
-
-    # If a solution is provided, draw the edges in the solution path with a distinct color and width
+    nx.draw_networkx_edges(graph, pos, edgelist=graph.edges(), width=6)
+    
     if solution:
         path_edges = get_path_edges(solution)
         nx.draw_networkx_edges(graph, pos, edgelist=path_edges, width=6, edge_color="tab:red")
-        #nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels, font_color='red')
+        
+    nx.draw_networkx_labels(graph, pos, font_size=20, font_family="sans-serif")
+    edge_labels = nx.get_edge_attributes(graph, 'weight')
+    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
 
     legend_elements = [Line2D([0], [0], color='red', lw=4, label='Solution Path')]
     plt.legend(handles=legend_elements, loc='upper left')
     plt.axis('off')
     plt.title(f"Total Distance: {calculate_fitness(graph, solution) if solution else 'N/A'}")
     plt.savefig('output.png')
-
+    
     if show:
         plt.show()
 
@@ -83,31 +81,24 @@ def initialize_population(graph, population_size):
     return population
 
 def calculate_fitness(graph, solution):
+    if not solution:
+        return 0  # Return 0 fitness for an empty solution
+    
     weight_sum = 0
-    visited_edges = set()  # Keep track of visited edges
     for i in range(len(solution) - 1):
         u, v = solution[i], solution[i + 1]
         if graph.has_edge(u, v):
             weight_sum += graph[u][v]['weight']
-            visited_edges.add((u, v))
         else:
             # Include zero-weight edges
             weight_sum += 0
-
     # Include the edge from the last to the first node to complete the circuit
     if graph.has_edge(solution[-1], solution[0]):
         weight_sum += graph[solution[-1]][solution[0]]['weight']
-        visited_edges.add((solution[-1], solution[0]))
     else:
         # Include zero-weight edges
         weight_sum += 0
-
-    # Penalty for unvisited edges
-    all_edges = set(graph.edges())
-    unvisited_edges = all_edges - visited_edges
-    penalty = sum(graph[u][v]['weight'] for u, v in unvisited_edges)
-
-    return weight_sum + penalty
+    return weight_sum
 
 
 
@@ -120,7 +111,6 @@ def select_parents(population, graph):
         tournament.sort(key=lambda x: calculate_fitness(graph, x))
         parents.append(tournament[0])
     return parents
-
 
 def crossover(parent1, parent2):
     # Single-point crossover
@@ -138,20 +128,48 @@ def mutate(solution, mutation_rate):
     return solution
 
 # Function to aggregate solutions (Wisdom of Crowds)
-def aggregate_solutions(solutions):
-    # Sort the solutions based on their fitness. Lower fitness is better.
-    sorted_solutions = sorted(solutions, key=lambda x: x[1])
+# Function to aggregate solutions (Wisdom of Crowds)
+# Function to aggregate solutions (Wisdom of Crowds)
+def aggregate_solutions(solutions, num_vertices):
+    # Create a dictionary to count the frequency of each edge
+    edge_counts = {}
     
-    # Choosing the top N solutions for aggregation
-    top_n = 1
-    top_solutions = sorted_solutions[:top_n]
-
+    # Create a list to keep track of visited vertices
+    visited_vertices = set()
+    
+    # Loop through each solution and count edge frequencies
+    for solution, distance, _ in solutions:
+        for i in range(len(solution) - 1):
+            edge = (solution[i], solution[i + 1])
+            edge_counts[edge] = edge_counts.get(edge, 0) + 1
+            visited_vertices.add(solution[i])
+            visited_vertices.add(solution[i + 1])
+        # Also count the edge from the last to the first node to complete the circuit
+        edge = (solution[-1], solution[0])
+        edge_counts[edge] = edge_counts.get(edge, 0) + 1
+        visited_vertices.add(solution[-1])
+        visited_vertices.add(solution[0])
+    
+    # Calculate how many times each vertex should be visited
+    required_visits = {v: 1 for v in range(num_vertices)}
+    
+    # Aggregate the most common edges to form the final solution
     aggregated_solution = []
-    for i in range(len(top_solutions[0][0])):
-        edges = [solution[0][i] for solution in top_solutions]
-        most_common_edge = max(set(edges), key=edges.count)
-        aggregated_solution.append(most_common_edge)
-
+    while edge_counts:
+        most_common_edge = max(edge_counts, key=edge_counts.get)
+        aggregated_solution.extend(most_common_edge)
+        del edge_counts[most_common_edge]
+    
+    # Ensure that all vertices are visited at least once
+    for v in visited_vertices:
+        if v not in aggregated_solution:
+            # Find an unused vertex to insert
+            for u in range(num_vertices):
+                if u not in visited_vertices:
+                    aggregated_solution.append(u)
+                    visited_vertices.add(u)
+                    break
+    
     return aggregated_solution
 
 # Genetic Algorithm function adapted for CPP
@@ -204,6 +222,9 @@ def run_ga_woc(pop_size=None, num_generations=None, mut_rate=None, visualization
             if not G.has_edge(i, j):
                 G.add_edge(i, j, weight=0)
     
+    # Calculate the number of vertices in the graph
+    num_vertices = len(G.nodes())
+    
     # Run the Genetic Algorithm multiple times and collect solutions
     solutions = []
     for _ in range(5):  # Run 5 independent Genetic Algorithms
@@ -211,7 +232,7 @@ def run_ga_woc(pop_size=None, num_generations=None, mut_rate=None, visualization
         solutions.append((solution, distance, log))
 
     # Aggregate solutions using Wisdom of Crowds (WoC) approach
-    best_solution = aggregate_solutions(solutions)
+    best_solution = aggregate_solutions(solutions, num_vertices)
     best_distance = calculate_fitness(G, best_solution)
     print(f"WoC Best Path: {best_solution}, Distance: {best_distance}")
     if visualization:

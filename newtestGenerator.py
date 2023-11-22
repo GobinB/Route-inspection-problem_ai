@@ -16,7 +16,7 @@ def generate_test_data(num_nodes, max_weight, filename="test_04.txt", undirected
 
     print(f"Test data generated and saved in {filename}")
 
-num_nodes = 7  # Number of nodes in the graph
-max_weight = 7  # Maximum weight of an edge
+num_nodes = 2  # Number of nodes in the graph
+max_weight = 2  # Maximum weight of an edge
 
 generate_test_data(num_nodes, max_weight)
