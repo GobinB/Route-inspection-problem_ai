@@ -11,9 +11,9 @@ import sys
 testdata = []
 
 # Initialize global variables for GA parameters
-population_size = 50
-generations = 100
-mutation_rate = 0.3
+population_size = 900
+generations = 300
+mutation_rate = 0.7
 
 # Function to open a file dialog and load test data
 def open_file(file_path=None):
@@ -42,22 +42,24 @@ def min_key(key, mst_set):
 def draw_graph(graph, solution=None, show=True):
     pos = nx.spring_layout(graph)
     nx.draw_networkx_nodes(graph, pos, node_size=700)
-    nx.draw_networkx_edges(graph, pos, edgelist=graph.edges(), width=6)
-    
+    nx.draw_networkx_labels(graph, pos, font_size=20, font_family="sans-serif")
+    edge_labels = nx.get_edge_attributes(graph, 'weight')
+
+    # Draw all the edges of the graph with default styling
+    nx.draw_networkx_edges(graph, pos, edgelist=graph.edges(), width=2)
+
+    # If a solution is provided, draw the edges in the solution path with a distinct color and width
     if solution:
         path_edges = get_path_edges(solution)
         nx.draw_networkx_edges(graph, pos, edgelist=path_edges, width=6, edge_color="tab:red")
-        
-    nx.draw_networkx_labels(graph, pos, font_size=20, font_family="sans-serif")
-    edge_labels = nx.get_edge_attributes(graph, 'weight')
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels)
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_labels, font_color='red')
 
     legend_elements = [Line2D([0], [0], color='red', lw=4, label='Solution Path')]
     plt.legend(handles=legend_elements, loc='upper left')
     plt.axis('off')
     plt.title(f"Total Distance: {calculate_fitness(graph, solution) if solution else 'N/A'}")
     plt.savefig('output.png')
-    
+
     if show:
         plt.show()
 
@@ -129,7 +131,7 @@ def aggregate_solutions(solutions):
     sorted_solutions = sorted(solutions, key=lambda x: x[1])
     
     # Choosing the top N solutions for aggregation
-    top_n = 5
+    top_n = 1
     top_solutions = sorted_solutions[:top_n]
 
     aggregated_solution = []
@@ -253,6 +255,7 @@ def main():
         num_generations = int(sys.argv[3])
         mut_rate = float(sys.argv[4])
         run_ga_woc(pop_size, num_generations, mut_rate, False)
+        
     else:
         # Run the GUI
         gui()
